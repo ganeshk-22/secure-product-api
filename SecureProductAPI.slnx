@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="SecureProductApi.API/SecureProductApi.API.csproj" />
+  <Project Path="SecureProductApi.Application/SecureProductApi.Application.csproj" />
+  <Project Path="SecureProductApi.Domain/SecureProductApi.Domain.csproj" />
+  <Project Path="SecureProductApi.Infrastructure/SecureProductApi.Infrastructure.csproj" />
+</Solution>
