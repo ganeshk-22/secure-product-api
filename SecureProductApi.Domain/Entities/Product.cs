@@ -18,10 +18,10 @@ namespace SecureProductApi.Domain.Entities
         [MaxLength(1000)]
         public string? Description { get; set; }
 
-        [Range(0.01, double.MaxValue)]
+        [Range(0.01, 1000000, ErrorMessage = "Price must be between 0.01 and 1,000,000")]
         public decimal Price { get; set; }
 
-        [Range(0, int.MaxValue)]
+        [Range(0, 100000, ErrorMessage = "Quantity must be between 0 and 100,000")]
         public int Quantity { get; set; }
     }
 }

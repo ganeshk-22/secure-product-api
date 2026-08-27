@@ -37,7 +37,23 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins("http://127.0.0.1:5500", "http://localhost:5500")
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
+
+builder.Services.AddHttpContextAccessor();
+
 var app = builder.Build();
+using (var scope = app.Services.CreateScope())
+{
+    await SecureProductApi.Infrastructure.Persistence.DbSeeder.SeedRolesAsync(scope.ServiceProvider);
+}
 
 if (app.Environment.IsDevelopment())
 {
@@ -46,8 +62,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
-app.UseAuthentication(); // must come before Authorization
+app.UseCors("AllowFrontend");
+app.UseAuthentication(); 
 app.UseAuthorization();
 
 app.MapControllers();

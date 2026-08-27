@@ -59,6 +59,7 @@ namespace SecureProductApi.Infrastructure
             services.AddScoped<ITokenService, TokenService>();
             services.AddScoped<IEmailService, EmailService>();
             services.AddScoped<IProductRepository, ProductRepository>();
+            services.AddScoped<IAuthRepository, AuthRepository>();
 
             return services;
         }

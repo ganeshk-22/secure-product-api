@@ -25,6 +25,10 @@ namespace SecureProductApi.Infrastructure.Persistence
                 .HasOne(rt => rt.User)
                 .WithMany(u => u.RefreshTokens)
                 .HasForeignKey(rt => rt.UserId);
+            
+            builder.Entity<Product>()
+               .Property(p => p.Price)
+               .HasPrecision(18, 2);
         }
     }
 }
