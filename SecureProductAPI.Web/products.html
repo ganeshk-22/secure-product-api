@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Products</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <nav>
+    <span id="welcomeMsg"></span>
+    <a href="#" id="logoutBtn">Logout</a>
+  </nav>
+
+  <h2>Products</h2>
+  <p id="message"></p>
+
+  <div id="adminForm" class="admin-only">
+    <h3 id="formTitle">Add Product</h3>
+    <form id="productForm">
+      <input type="hidden" id="productId">
+      <input type="text" id="name" placeholder="Name" required>
+      <input type="text" id="description" placeholder="Description">
+      <input type="number" id="price" step="0.01" placeholder="Price" required>
+      <input type="number" id="quantity" placeholder="Quantity" required>
+      <button type="submit" id="submitBtn">Add Product</button>
+      <button type="button" id="cancelEditBtn" style="display:none; background:#888;">Cancel Edit</button>
+    </form>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th><th>Description</th><th>Price</th><th>Quantity</th>
+        <th class="admin-only">Actions</th>
+      </tr>
+    </thead>
+    <tbody id="productsBody"></tbody>
+  </table>
+
+  <script src="js/api.js"></script>
+  <script>
+    // guard: redirect if not logged in
+    if (!getAccessToken()) window.location.href = "login.html";
+
+    const role = getUserRole();
+    document.getElementById("welcomeMsg").textContent = `Role: ${role}`;
+
+    if (role === "Admin") {
+      document.querySelectorAll(".admin-only").forEach(el => el.style.display = "block");
+      document.querySelectorAll("th.admin-only").forEach(el => el.style.display = "table-cell");
+    }
+
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+      clearTokens();
+      window.location.href = "login.html";
+    });
+
+    async function loadProducts() {
+      const messageEl = document.getElementById("message");
+      try {
+        const res = await apiFetch("/products");
+        if (!res.ok) throw new Error();
+        const products = await res.json();
+
+        const tbody = document.getElementById("productsBody");
+        tbody.innerHTML = "";
+
+        products.forEach(p => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${p.name}</td>
+            <td>${p.description ?? ""}</td>
+            <td>${p.price}</td>
+            <td>${p.quantity}</td>
+            <td class="admin-only" style="display:${role === "Admin" ? "table-cell" : "none"}">
+              <button onclick="editProduct(${p.id}, '${p.name}', '${p.description ?? ""}', ${p.price}, ${p.quantity})">Edit</button>
+              <button onclick="deleteProduct(${p.id})">Delete</button>
+            </td>`;
+          tbody.appendChild(row);
+        });
+      } catch {
+        messageEl.textContent = "Failed to load products.";
+        messageEl.className = "error";
+      }
+    }
+
+    document.getElementById("productForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const messageEl = document.getElementById("message");
+      const id = document.getElementById("productId").value;
+
+      const body = JSON.stringify({
+        name: document.getElementById("name").value,
+        description: document.getElementById("description").value,
+        price: parseFloat(document.getElementById("price").value),
+        quantity: parseInt(document.getElementById("quantity").value)
+      });
+
+      try {
+        const res = id
+          ? await apiFetch(`/products/${id}`, { method: "PUT", body: JSON.stringify({ id: parseInt(id), ...JSON.parse(body) }) })
+          : await apiFetch("/products", { method: "POST", body });
+
+        if (!res.ok) {
+          const err = await res.json();
+          messageEl.textContent = JSON.stringify(err);
+          messageEl.className = "error";
+          return;
+        }
+
+        messageEl.textContent = id ? "Product updated." : "Product added.";
+        messageEl.className = "success";
+        resetForm();
+        loadProducts();
+      } catch {
+        messageEl.textContent = "Save failed.";
+        messageEl.className = "error";
+      }
+    });
+
+    function editProduct(id, name, description, price, quantity) {
+      document.getElementById("productId").value = id;
+      document.getElementById("name").value = name;
+      document.getElementById("description").value = description;
+      document.getElementById("price").value = price;
+      document.getElementById("quantity").value = quantity;
+      document.getElementById("formTitle").textContent = "Edit Product";
+      document.getElementById("submitBtn").textContent = "Update Product";
+      document.getElementById("cancelEditBtn").style.display = "block";
+    }
+
+    function resetForm() {
+      document.getElementById("productForm").reset();
+      document.getElementById("productId").value = "";
+      document.getElementById("formTitle").textContent = "Add Product";
+      document.getElementById("submitBtn").textContent = "Add Product";
+      document.getElementById("cancelEditBtn").style.display = "none";
+    }
+
+    document.getElementById("cancelEditBtn").addEventListener("click", resetForm);
+
+    async function deleteProduct(id) {
+      if (!confirm("Delete this product?")) return;
+      const res = await apiFetch(`/products/${id}`, { method: "DELETE" });
+      if (res.ok) loadProducts();
+      else alert("Delete failed.");
+    }
+
+    loadProducts();
+  </script>
+</body>
+</html>
